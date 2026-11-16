@@ -1,0 +1,95 @@
+[
+  {
+    "n": "tac tap",
+    "t": [
+      "TC DE TÓRAX, ABDOMEN Y PELVIS CON CONTRASTE",
+      "Antecedentes:",
+      "Hallazgos:",
+      "Árbol traqueobronquial principal permeable.",
+      "Volúmenes pulmonares conservados. No se observa focos de consolidación ni nódulos sospechosos. No se identifica derrame pleural ni neumotórax.",
+      "Corazón de tamaño normal. No se observa derrame pericárdico. Grandes vasos mediastínicos de trayecto y calibre normal. No se identifican adenopatías mediastínicas ni hiliares por criterios de tamaño.",
+      "Hígado de tamaño, forma y densidad normal. No se observan lesiones focales.",
+      "Eje venoso portoesplenomesentérico y venas suprahepáticas permeables.",
+      "Vesícula biliar distendida, de pared fina, con contenido hipodenso.",
+      "Vía biliar intra y extrahepática de calibre adecuado.",
+      "Páncreas, bazo y glándulas suprarrenales sin alteraciones.",
+      "Riñones de tamaño, forma y grosor parenquimatoso normal. No se observa hidronefrosis ni colecciones perirrenales.",
+      "Uréteres de trayecto y calibre normal.",
+      "Vejiga distendida, de pared fina, con contenido hipodenso, homogéneo.",
+      "",
+      "Aorta y vena cava inferior de calibre normal.",
+      "Estómago colapsado, de pared no evaluable. Asas de intestino delgado y colon de disposición y calibre normal. Apéndice vermiforme sin alteraciones.",
+      "No se identifican adenopatías pélvicas, mesentéricas ni retroperitoneales por criterios de tamaño.",
+      "Esqueleto óseo visible sin lesiones de carácter agresivo.",
+      "Impresión:",
+      "Examen sin hallazgos de significado patológico.",
+      "",
+      "{firma}"
+    ]
+  },
+  {
+    "n": "tac de tórax",
+    "t": [
+      "TOMOGRAFÍA COMPUTADA DE TÓRAX",
+      "Antecedentes:",
+      "Hallazgos",
+      "Tráquea y bronquios principales de trayectos y calibres normales.",
+      "Volúmenes pulmonares conservados. El parénquima pulmonar presenta densidad y arquitectura conservada. No se observan imágenes nodulares.",
+      "No se observa derrame pleural ni neumotórax.",
+      "Corazón de forma y tamaño en límites normales. No se observa derrame pericárdico. Vasos del mediastino de trayectos y calibres conservados.",
+      "No se observan adenopatías mediastínicas ni axilares.",
+      "Esqueleto óseo visible sin lesiones de aspecto agresivo.",
+      "",
+      "Impresión:",
+      "Examen sin hallazgos patológicos.",
+      "Atte.",
+      "{firma}"
+    ]
+  },
+  {
+    "n": "Tac abdomen y pelvis",
+    "t": [
+      "TC DE ABDOMEN Y PELVIS CON CONTRASTE",
+      "Antecedentes:",
+      "Hallazgos:",
+      "Hígado de tamaño, forma y densidad normal. No se observan lesiones focales.",
+      "Eje venoso portoesplenomesentérico y venas suprahepáticas permeables.",
+      "Vesícula biliar distendida, de pared fina, con contenido hipodenso.",
+      "Vía biliar intra y extrahepática de calibre adecuado.",
+      "Páncreas, bazo y glándulas suprarrenales sin alteraciones.",
+      "Riñones de tamaño, forma y grosor parenquimatoso normal. No se observa hidronefrosis ni colecciones perirrenales.",
+      "Uréteres de trayecto y calibre normal.",
+      "Vejiga distendida, de pared fina, con contenido hipodenso, homogéneo.",
+      "",
+      "Aorta y vena cava inferior de calibre normal.",
+      "Estómago colapsado, de pared no evaluable. Asas de intestino delgado y colon de disposición y calibre normal. Apéndice vermiforme sin alteraciones.",
+      "No se identifican adenopatías pélvicas, mesentéricas ni retroperitoneales por criterios de tamaño.",
+      "Esqueleto óseo visible sin lesiones de carácter agresivo.",
+      "Impresión:",
+      "Examen sin hallazgos de significado patológico.",
+      "",
+      "{firma}"
+    ]
+  },
+  {
+    "n": "Eco testicular",
+    "t": [
+      "ECOTOMOGRAFÍA TESTICULAR",
+      "",
+      "Antecedentes clínicos: ",
+      "",
+      "Hallazgos:",
+      "Testículos de tamaño y morfología normal, ambos se encuentran en el interior del saco escrotal al momento del examen.",
+      "La ecoestructura interna de su parénquima es homogénea, sin identificar lesiones focales de aspecto sólido ni quístico en su espesor, ni alteraciones en el patrón de flujo vascular al estudio Doppler-Color.",
+      "El testículo derecho mide XXXXXX cm y el izquierdo XXXX cm en sus ejes longitudinal, anteroposterior y transversal respectivamente.",
+      "Epidídimos de tamaño y configuración normal, identificándose pequeños quistes simples de hasta 0,4 cm en relación a ambas cabezas.",
+      "En situación extra testicular no hay dilatación de las venas que conforman el plexo pampiniforme como tampoco hidrocele.",
+      "",
+      "Impresión:",
+      "Examen sin hallazgos de significado patológico.",
+      "",
+      "",
+      "{Firma}"
+    ]
+  }
+]
