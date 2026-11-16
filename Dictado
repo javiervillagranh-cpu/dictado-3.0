@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dictado</title>
+<style>
+:root{
+  --bg:#f6f7f5; --surface:#ffffff; --text:#1d2420; --muted:#66716b; --line:#d9dfdb;
+  --accent:#1f6f5c; --accent-text:#ffffff; --rec:#b3261e;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141a17; --surface:#1c2420; --text:#e6ece8; --muted:#97a39c; --line:#2d3833;
+    --accent:#4fb79c; --accent-text:#0e1613; --rec:#ff6b60;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141a17; --surface:#1c2420; --text:#e6ece8; --muted:#97a39c; --line:#2d3833;
+  --accent:#4fb79c; --accent-text:#0e1613; --rec:#ff6b60;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+main{max-width:720px;margin:0 auto;padding:24px 16px 40px;display:flex;flex-direction:column;gap:16px}
+h1{font-size:1.4rem;margin:0}
+p.hint{margin:0;color:var(--muted);font-size:.95rem}
+textarea{width:100%;min-height:50vh;resize:vertical;padding:16px;font:inherit;font-size:1.05rem;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:10px}
+textarea:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+button,select,input{font:inherit;padding:12px 18px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--text);cursor:pointer}
+input{cursor:text; padding:8px 12px;}
+button.main{background:var(--accent);color:var(--accent-text);border-color:var(--accent);font-weight:600;min-width:150px}
+button.main.on{background:var(--rec);border-color:var(--rec);color:#fff}
+#status{color:var(--muted);font-size:.9rem;min-height:1.4em}
+details{background:var(--surface); padding:16px; border-radius:10px; border:1px solid var(--line);}
+summary{cursor:pointer; font-weight:600; color:var(--accent);}
+.dic-row{display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;}
+</style>
+</head>
+<body>
+<main>
+  <h1>Dictado</h1>
+  <p class="hint">Comandos: «plantilla [nombre]», «deshacer», «dos romano». Atajo: <b>Ctrl + Shift + D</b>.</p>
+  
+  <textarea id="texto" placeholder="Aquí aparecerá lo que dictes…" aria-label="Texto dictado"></textarea>
+  
+  <div class="row">
+    <button id="btn" class="main" type="button">Dictar</button>
+    <button id="copiar" type="button">Copiar</button>
+    <button id="borrar" type="button">Borrar</button>
+    <select id="idioma" aria-label="Idioma">
+      <option value="es-CL" selected>Español (Chile)</option>
+      <option value="es-ES">Español (España)</option>
+      <option value="es-MX">Español (México)</option>
+      <option value="en-US">English (US)</option>
+    </select>
+    <label style="display:flex;gap:8px;align-items:center;color:var(--muted);font-size:.95rem"><input type="checkbox" id="cmd" checked> Comandos y Plantillas</label>
+  </div>
+  
+  <div id="status" role="status"></div>
+  <div id="prop" class="row" style="display:none"><span id="propTxt"></span><button id="propSi" type="button">Siempre</button><button id="propNo" type="button">Solo esta vez</button></div>
+
+  <details>
+    <summary>Plantillas y firma</summary>
+    <p class="hint" style="margin-top:8px">Elige una plantilla e insértala donde esté el cursor, o di «plantilla» + su nombre mientras dictas. Escribe {firma} dentro de una plantilla para que se reemplace por tu firma.</p>
+    <div class="dic-row">
+      <select id="plSel" aria-label="Plantillas"></select>
+      <button id="plIns" type="button">Insertar</button>
+      <button id="plDel" type="button">Eliminar</button>
+    </div>
+    <div class="dic-row">
+      <input type="text" id="plNom" placeholder="Nombre de la plantilla">
+      <button id="plSave" type="button">Guardar texto como plantilla</button>
+    </div>
+    <p class="hint" style="margin-top:14px">Guarda el texto del cuadro (o solo la parte que tengas seleccionada). Si usas un nombre existente, lo reemplaza.</p>
+    <p class="hint" style="margin-top:14px;font-weight:600">Firma</p>
+    <textarea id="firma" rows="2" style="min-height:0;font-size:.95rem;padding:10px;margin-top:6px" placeholder="Ej. Dr. Nombre Apellido - Residente de Imagenología"></textarea>
+    <div class="dic-row">
+      <button id="firmaSave" type="button">Guardar firma</button>
+      <button id="plExp" type="button">Exportar</button>
+      <button id="plExpC" type="button">Exportar para compartir</button>
+      <button id="plImp" type="button">Importar</button>
+      <input type="file" id="plFile" accept=".json,application/json" style="display:none">
+    </div>
+    <div id="plMsg" style="color:var(--accent); font-size:0.9rem; margin-top:8px;"></div>
+  </details>
+
+  <details>
+    <summary>Añadir al diccionario personalizado</summary>
+    <p class="hint" style="margin-top:8px">Guarda términos que el sistema suela interpretar mal para corregirlos automáticamente en el futuro.</p>
+    <div class="dic-row">
+      <input type="text" id="dicIn" placeholder="Si escuchas... (ej. adeno)">
+      <input type="text" id="dicOut" placeholder="Escribe... (ej. adenomiomatosis)">
+      <button id="btnDic" type="button">Guardar</button>
+    </div>
+    <div id="dicMsg" style="color:var(--accent); font-size:0.9rem; margin-top:8px;"></div>
+    <div id="dicLista" style="margin-top:12px;font-size:.95rem"></div>
+  </details>
+</main>
+<script>
+(function(){
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var btn = document.getElementById('btn'), box = document.getElementById('texto'),
+      st = document.getElementById('status'), lang = document.getElementById('idioma');
+  var rec = null, activo = false, pre = '', post = '', interimStr = '', ultimoPre = '';
+  
+  function render(it){
+    interimStr = it ? sepa(pre, it) + it : '';
+    box.value = pre + interimStr + post;
+    if(!tmr) ref = pre + post;
+    var c = pre.length + interimStr.length;
+    box.setSelectionRange(c, c);
+  }
+  
+  function sync(){
+    var v = box.value, s = box.selectionStart, e = box.selectionEnd;
+    if(interimStr){
+      var a = pre.length, b = a + interimStr.length;
+      var adj = function(p){ return p <= a ? p : (p >= b ? p - (b - a) : a); };
+      v = v.slice(0, a) + v.slice(b); s = adj(s); e = adj(e); interimStr = '';
+      box.value = v; box.setSelectionRange(s, e);
+    }
+    pre = v.slice(0, s); post = v.slice(e);
+  }
+  
+  var cmd = document.getElementById('cmd');
+  function comandos(t){
+    return t
+      .replace(/\s*\bnuevo p[aá]rrafo\b[\s,.]*/gi, '\n\n')
+      .replace(/\s*\bnueva l[ií]nea\b[\s,.]*/gi, '\n')
+      // Paréntesis
+      .replace(/\s*\b(?:abre|abrir) par[eé]ntesis\b\s*/gi, ' (')
+      .replace(/\s*\b(?:cierra|cerrar) par[eé]ntesis\b\s*/gi, ') ')
+      .replace(/\s*\bdos puntos\b\s*/gi, ': ')
+      .replace(/\s*\bpunto\b\s*/gi, '. ')
+      .replace(/\s*\bcoma\b\s*/gi, ', ')
+      .replace(/(\d), (\d)/g, '$1,$2')
+      // Unidades de medida
+      .replace(/\bmil[ií]metros?\b/gi, 'mm')
+      .replace(/\bcent[ií]metros?\b/gi, 'cm')
+      // Números romanos
+      .replace(/\buno romano\b/gi, 'I')
+      .replace(/\bdos romano\b/gi, 'II')
+      .replace(/\btres romano\b/gi, 'III')
+      .replace(/\bcuatro romano\b/gi, 'IV')
+      .replace(/\bcinco romano\b/gi, 'V')
+      .replace(/\bseis romano\b/gi, 'VI')
+      .replace(/\bsiete romano\b/gi, 'VII')
+      .replace(/\bocho romano\b/gi, 'VIII')
+      // Corrección de medidas (asterisco a x)
+      .replace(/\*/g, 'x')
+      .replace(/(\d)\s*por\s*(?=\d)/gi, '$1 x ');
+  }
+  var diccionarioMedico = {
+    "\\bte ce\\b": "TC",
+    "\\btc\\b": "TC",
+    "\\berre eme\\b": "RM",
+    "\\brm\\b": "RM",
+    "\\beco\\b": "ECO",
+    "\\becografía\\b": "Ecografía",
+    "\\bpe de a\\b": "PDA",
+    "\\bpda\\b": "PDA",
+    "\\berre cero\\b": "R0",
+    "\\berre uno\\b": "R1",
+    "\\bse\\b": "se",
+    "\\bcalibre\\b": "calibre",
+    "\\bbaso\\b": "bazo"
+  };
+
+  function cargarDiccionarioExtra() {
+    try { return JSON.parse(localStorage.getItem('dicExtra')) || {}; } catch(e) { return {}; }
+  }
+
+  function corregirTerminos(t) {
+    var modificado = t;
+    var dicExtra = cargarDiccionarioExtra();
+    
+    dicExtra = diccionarioTotal();
+    Object.keys(dicExtra).forEach(function(k){
+      modificado = modificado.replace(new RegExp("(?<![" + L + "])" + esc(k) + "(?![" + L + "])", 'gi'), function(){ return dicExtra[k]; });
+    });
+    for (var regex in diccionarioMedico) {
+      modificado = modificado.replace(new RegExp(regex, 'gi'), diccionarioMedico[regex]);
+    }
+    return aproximar(modificado);
+  }
+
+  // ---------- Diccionario: compartido, aproximado y aprendizaje ----------
+  var L = 'A-Za-z0-9áéíóúüñÁÉÍÓÚÜÑ';
+  var RE_W = new RegExp('^([^' + L + ']*)([' + L + ']*)([^' + L + ']*)$');
+  var compartido = {}, ref = '', tmr = null, prop = null;
+  function guardarDic(d){ try{ localStorage.setItem('dicExtra', JSON.stringify(d)); }catch(e){} }
+  function diccionarioTotal(){
+    var d = {}, p = cargarDiccionarioExtra();
+    Object.keys(compartido).forEach(function(k){ if(typeof compartido[k] === 'string') d[k] = compartido[k]; });
+    Object.keys(p).forEach(function(k){ d[k] = p[k]; });
+    return d;
+  }
+  function lev(a, b){
+    var m = a.length, n = b.length, d = [], i, j, p, t;
+    for(j = 0; j <= n; j++) d[j] = j;
+    for(i = 1; i <= m; i++){
+      p = d[0]; d[0] = i;
+      for(j = 1; j <= n; j++){ t = d[j]; d[j] = Math.min(d[j] + 1, d[j-1] + 1, p + (a[i-1] === b[j-1] ? 0 : 1)); p = t; }
+    }
+    return d[n];
+  }
+  function mejor(c, objetivos, unir){
+    if(c.length < 6) return null;
+    var nc = norm(c), res = null, md = 99;
+    objetivos.forEach(function(o){
+      var no = norm(o);
+      if(nc === no){ if(unir || c.toLowerCase() !== o.toLowerCase()){ res = o; md = 0; } return; }
+      if(nc[0] !== no[0] || nc.indexOf(no) === 0 || no.indexOf(nc) === 0) return;
+      var d = lev(nc, no);
+      if(d <= (no.length >= 9 ? 2 : 1) && d < md){ md = d; res = o; }
+    });
+    return res;
+  }
+  // Corrige palabras muy parecidas a términos de tu diccionario (también palabras partidas en dos)
+  function aproximar(t){
+    var d = diccionarioTotal(), objetivos = [];
+    Object.keys(d).forEach(function(k){
+      var v = d[k]; if(/^[A-Za-záéíóúüñÁÉÍÓÚÜÑ]{7,}$/.test(v) && objetivos.indexOf(v) < 0) objetivos.push(v);
+    });
+    if(!objetivos.length) return t;
+    var p = t.split(/(\s+)/), out = [], i = 0;
+    while(i < p.length){
+      var w1 = RE_W.exec(p[i]);
+      if(w1 && w1[2]){
+        var w2 = (i + 2 < p.length && /^ +$/.test(p[i+1])) ? RE_W.exec(p[i+2]) : null;
+        if(w2 && w2[2] && !w1[3] && !w2[1]){
+          var b2 = mejor(w1[2] + w2[2], objetivos, true);
+          if(b2){ out.push(w1[1] + b2 + w2[3]); i += 3; continue; }
+        }
+        var b1 = mejor(w1[2], objetivos);
+        out.push(b1 ? w1[1] + b1 + w1[3] : p[i]);
+      } else out.push(p[i]);
+      i++;
+    }
+    return out.join('');
+  }
+  function dicRender(){
+    var cont = document.getElementById('dicLista'), d = cargarDiccionarioExtra(), ks = Object.keys(d);
+    cont.innerHTML = '';
+    if(!ks.length) cont.textContent = 'Aún no hay términos guardados.';
+    ks.forEach(function(k){
+      var r = document.createElement('div'); r.className = 'dic-row'; r.style.alignItems = 'center';
+      var sp = document.createElement('span'); sp.textContent = '«' + k + '» → «' + d[k] + '»'; sp.style.flex = '1';
+      var b = document.createElement('button'); b.type = 'button'; b.textContent = 'Borrar'; b.style.padding = '4px 12px';
+      b.addEventListener('click', function(){ var x = cargarDiccionarioExtra(); delete x[k]; guardarDic(x); dicRender(); });
+      r.appendChild(sp); r.appendChild(b); cont.appendChild(r);
+    });
+    var nc = Object.keys(compartido).length;
+    if(nc){ var h = document.createElement('p'); h.className = 'hint'; h.style.marginTop = '10px'; h.textContent = 'Diccionario compartido cargado: ' + nc + ' términos.'; cont.appendChild(h); }
+  }
+  try{
+    fetch('diccionario.json', {cache: 'no-cache'}).then(function(r){ return r.ok ? r.json() : {}; })
+      .then(function(d){ if(d && typeof d === 'object') compartido = d; dicRender(); }).catch(function(){});
+  }catch(e){}
+  dicRender();
+
+  // Aprender de tus correcciones: solo propone, y solo si parece un error de reconocimiento
+  var propBox = document.getElementById('prop'), propTxt = document.getElementById('propTxt');
+  function quitarP(w){ var m = RE_W.exec(w); return m ? m[2] : ''; }
+  function palabras(x){ return x.split(/\s+/).filter(Boolean); }
+  function detectar(){
+    tmr = null;
+    var a = palabras(ref), b = palabras(box.value);
+    ref = box.value;
+    var i = 0; while(i < a.length && i < b.length && a[i] === b[i]) i++;
+    var j = 0; while(j < a.length - i && j < b.length - i && a[a.length-1-j] === b[b.length-1-j]) j++;
+    var A = a.slice(i, a.length - j), B = b.slice(i, b.length - j);
+    if(A.length < 1 || A.length > 2 || B.length !== 1) return;
+    var viejo = A.map(quitarP).join(' ').trim().toLowerCase(), nuevo = quitarP(B[0]);
+    if(!viejo || !nuevo || /\d/.test(viejo + nuevo) || cargarDiccionarioExtra()[viejo]) return;
+    var nv = norm(viejo.replace(/ /g, '')), nn = norm(nuevo);
+    if(nv === nn || nv[0] !== nn[0] || lev(nv, nn) / Math.max(nv.length, nn.length) > 0.4) return;
+    prop = {v: viejo, n: nuevo};
+    propTxt.textContent = '¿Cambiar siempre «' + viejo + '» por «' + nuevo + '»?';
+    propBox.style.display = 'flex';
+  }
+  document.getElementById('propSi').addEventListener('click', function(){
+    if(prop){ var d = cargarDiccionarioExtra(); d[prop.v] = prop.n; guardarDic(d); dicRender(); st.textContent = 'Guardado en el diccionario.'; }
+    prop = null; propBox.style.display = 'none';
+  });
+  document.getElementById('propNo').addEventListener('click', function(){ prop = null; propBox.style.display = 'none'; });
+
+  document.getElementById('btnDic').addEventListener('click', function(){
+    var inVal = document.getElementById('dicIn').value.trim();
+    var outVal = document.getElementById('dicOut').value.trim();
+    if(inVal && outVal){
+      var dicExtra = cargarDiccionarioExtra();
+      dicExtra[inVal] = outVal;
+      localStorage.setItem('dicExtra', JSON.stringify(dicExtra));
+      dicRender();
+      document.getElementById('dicIn').value = '';
+      document.getElementById('dicOut').value = '';
+      var msg = document.getElementById('dicMsg');
+      msg.textContent = 'Añadido: Cuando digas "' + inVal + '" escribirá "' + outVal + '".';
+      setTimeout(function(){ msg.textContent = ''; }, 4000);
+    }
+  });
+
+  // ---------- Plantillas y firma (guardadas en este navegador) ----------
+  var semillas = [
+    {n: "tac tap", t: [
+      "TC DE TÓRAX, ABDOMEN Y PELVIS CON CONTRASTE","Antecedentes:","Hallazgos:",
+      "Árbol traqueobronquial principal permeable.",
+      "Volúmenes pulmonares conservados. No se observa focos de consolidación ni nódulos sospechosos. No se identifica derrame pleural ni neumotórax.",
+      "Corazón de tamaño normal. No se observa derrame pericárdico. Grandes vasos mediastínicos de trayecto y calibre normal. No se identifican adenopatías mediastínicas ni hiliares por criterios de tamaño.",
+      "Hígado de tamaño, forma y densidad normal. No se observan lesiones focales.",
+      "Eje venoso portoesplenomesentérico y venas suprahepáticas permeables.",
+      "Vesícula biliar distendida, de pared fina, con contenido hipodenso.",
+      "Vía biliar intra y extrahepática de calibre adecuado.",
+      "Páncreas, bazo y glándulas suprarrenales sin alteraciones.",
+      "Riñones de tamaño, forma y grosor parenquimatoso normal. No se observa hidronefrosis ni colecciones perirrenales.",
+      "Uréteres de trayecto y calibre normal.",
+      "Vejiga distendida, de pared fina, con contenido hipodenso, homogéneo.","",
+      "Aorta y vena cava inferior de calibre normal.",
+      "Estómago colapsado, de pared no evaluable. Asas de intestino delgado y colon de disposición y calibre normal. Apéndice vermiforme sin alteraciones.",
+      "No se identifican adenopatías pélvicas, mesentéricas ni retroperitoneales por criterios de tamaño.",
+      "Esqueleto óseo visible sin lesiones de carácter agresivo.",
+      "Impresión:","Examen sin hallazgos de significado patológico.","","{firma}"].join("\n")},
+    {n: "tac de tórax", t: [
+      "TOMOGRAFÍA COMPUTADA DE TÓRAX","Antecedentes:","Hallazgos",
+      "Tráquea y bronquios principales de trayectos y calibres normales.",
+      "Volúmenes pulmonares conservados. El parénquima pulmonar presenta densidad y arquitectura conservada. No se observan imágenes nodulares.",
+      "No se observa derrame pleural ni neumotórax.",
+      "Corazón de forma y tamaño en límites normales. No se observa derrame pericárdico. Vasos del mediastino de trayectos y calibres conservados.",
+      "No se observan adenopatías mediastínicas ni axilares.",
+      "Esqueleto óseo visible sin lesiones de aspecto agresivo.","",
+      "Impresión:","Examen sin hallazgos patológicos.","Atte.","{firma}"].join("\n")}
+  ];
+  function leer(k, def){ try{ var v = localStorage.getItem(k); return v === null ? def : JSON.parse(v); }catch(e){ return def; } }
+  function escribir(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+  var compartidas = [];
+  var plantillas = leer('plantillas', semillas);
+  if(!Array.isArray(plantillas)) plantillas = [];
+  var firma = leer('firma', '');
+  if(typeof firma !== 'string') firma = '';
+
+  var plSel = document.getElementById('plSel'), plNom = document.getElementById('plNom'),
+      plMsg = document.getElementById('plMsg'), firmaBox = document.getElementById('firma'),
+      plFile = document.getElementById('plFile');
+  firmaBox.value = firma;
+
+  function norm(s){
+    return s.toLowerCase().replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
+  }
+  function esc(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  function expandir(t){ return t.split('{firma}').join(firma); }
+  function aviso(m){ plMsg.textContent = m; setTimeout(function(){ if(plMsg.textContent === m) plMsg.textContent = ''; }, 4000); }
+  function indiceDe(nombre){
+    var k = -1; plantillas.forEach(function(p, i){ if(norm(p.n) === norm(nombre)) k = i; });
+    return k;
+  }
+  // Lista que se muestra: primero las personales y luego las compartidas (si una personal tiene el mismo nombre, gana)
+  function listaTotal(){
+    var r = plantillas.map(function(p){ return {n: p.n, t: p.t, c: false}; });
+    compartidas.forEach(function(p){ if(indiceDe(p.n) < 0) r.push({n: p.n, t: p.t, c: true}); });
+    return r;
+  }
+  function refrescar(sel){
+    plSel.innerHTML = '';
+    listaTotal().forEach(function(p, i){
+      var o = document.createElement('option'); o.value = i; o.textContent = p.n + (p.c ? ' (compartida)' : ''); plSel.appendChild(o);
+    });
+    if(sel !== undefined) plSel.value = sel;
+  }
+  refrescar();
+  try{
+    fetch('plantillas.json', {cache: 'no-cache'}).then(function(r){ return r.ok ? r.json() : []; })
+      .then(function(d){
+        if(!Array.isArray(d)) return;
+        compartidas = d.filter(function(p){ return p && typeof p.n === 'string' && p.n.trim() && (typeof p.t === 'string' || Array.isArray(p.t)); })
+          .map(function(p){ return {n: p.n, t: Array.isArray(p.t) ? p.t.join('\n') : p.t}; });
+        var v = plSel.value; refrescar(); if(v !== '') plSel.value = v;
+      }).catch(function(){});
+  }catch(e){}
+
+  // Reemplaza «plantilla <nombre>» por el texto de la plantilla (sin pasar por comandos/diccionario)
+  function procesar(t){
+    var base = function(x){ return comandos(corregirTerminos(x)); };
+    var lista = listaTotal();
+    var nombres = lista.map(function(p){ return norm(p.n); }).filter(Boolean)
+      .sort(function(a, b){ return b.length - a.length; });
+    if(!nombres.length) return base(t);
+    var re = new RegExp('\\b(?:insertar )?plantilla (' + nombres.map(esc).join('|') + ')(?![a-z0-9ñ])', 'g');
+    var n = norm(t), out = '', ult = 0, m;
+    while((m = re.exec(n))){
+      var q = lista.filter(function(x){ return norm(x.n) === m[1]; })[0];
+      out += base(t.slice(ult, m.index)) + '\n\n' + expandir(q.t) + '\n\n';
+      ult = m.index + m[0].length;
+    }
+    return out + base(t.slice(ult));
+  }
+
+  document.getElementById('plIns').addEventListener('click', function(){
+    var p = listaTotal()[plSel.value]; if(!p) return;
+    sync(); ultimoPre = pre;
+    pre += (pre && !/\n\s*$/.test(pre) ? '\n\n' : '') + expandir(p.t) + '\n\n';
+    render('');
+    st.textContent = 'Plantilla insertada.';
+  });
+
+  document.getElementById('plDel').addEventListener('click', function(){
+    var p = listaTotal()[plSel.value]; if(!p) return;
+    if(p.c){ aviso('Las plantillas compartidas solo se pueden quitar editando plantillas.json en GitHub.'); return; }
+    if(!confirm('¿Eliminar la plantilla «' + p.n + '»?')) return;
+    plantillas.splice(indiceDe(p.n), 1);
+    escribir('plantillas', plantillas); refrescar();
+    aviso('Plantilla eliminada.');
+  });
+
+  document.getElementById('plSave').addEventListener('click', function(){
+    var n = plNom.value.trim();
+    var txt = (box.selectionStart !== box.selectionEnd ? box.value.slice(box.selectionStart, box.selectionEnd) : box.value).trim();
+    if(!n || !txt){ aviso('Escribe un nombre y deja texto en el cuadro (o selecciónalo).'); return; }
+    if(firma) txt = txt.split(firma).join('{firma}');
+    var k = indiceDe(n);
+    if(k >= 0) plantillas[k] = {n: n, t: txt}; else { plantillas.push({n: n, t: txt}); k = plantillas.length - 1; }
+    escribir('plantillas', plantillas); refrescar(k); plNom.value = '';
+    aviso('Plantilla guardada: «' + n + '». Para usarla por voz di «plantilla ' + n + '».');
+  });
+
+  document.getElementById('firmaSave').addEventListener('click', function(){
+    firma = firmaBox.value.trim(); escribir('firma', firma);
+    aviso('Firma guardada.');
+  });
+
+  document.getElementById('plExp').addEventListener('click', function(){
+    var blob = new Blob([JSON.stringify({plantillas: plantillas, firma: firma, diccionario: cargarDiccionarioExtra()}, null, 2)], {type: 'application/json'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'plantillas-dictado.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+  });
+
+  document.getElementById('plExpC').addEventListener('click', function(){
+    var datos = plantillas.map(function(p){ return {n: p.n, t: p.t.split('\n')}; });
+    var blob = new Blob([JSON.stringify(datos, null, 2)], {type: 'application/json'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'plantillas.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+    aviso('Descargado plantillas.json. Súbelo a tu repositorio de GitHub.');
+  });
+
+  document.getElementById('plImp').addEventListener('click', function(){ plFile.click(); });
+  plFile.addEventListener('change', function(){
+    var f = plFile.files[0]; if(!f) return;
+    var r = new FileReader();
+    r.onload = function(){
+      try{
+        var d = JSON.parse(r.result), c = 0;
+        (d.plantillas || []).forEach(function(p){
+          if(p && typeof p.n === 'string' && typeof p.t === 'string' && p.n.trim()){
+            var k = indiceDe(p.n);
+            if(k >= 0) plantillas[k] = {n: p.n, t: p.t}; else plantillas.push({n: p.n, t: p.t});
+            c++;
+          }
+        });
+        if(!firma && typeof d.firma === 'string' && d.firma){ firma = d.firma; firmaBox.value = firma; escribir('firma', firma); }
+        var dd = d.diccionario, nd = 0;
+        if(dd && typeof dd === 'object'){
+          var cur = cargarDiccionarioExtra();
+          Object.keys(dd).forEach(function(k){ if(typeof dd[k] === 'string'){ cur[k] = dd[k]; nd++; } });
+          guardarDic(cur); dicRender();
+        }
+        escribir('plantillas', plantillas); refrescar();
+        aviso('Importadas ' + c + ' plantillas y ' + nd + ' términos del diccionario.');
+      }catch(e){ aviso('El archivo no es válido.'); }
+      plFile.value = '';
+    };
+    r.readAsText(f);
+  });
+  
+  function limpiar(t){ return t.replace(/^[ \t]+|[ \t]+$/g, ''); }
+  function sepa(b, f){ return (b && !/\s$/.test(b) && !/^[.,\s]/.test(f)) ? ' ' : ''; }
+
+  function capitalizar(texto, previo) {
+    if (!texto) return texto;
+    var t = texto;
+    if (!previo || /[\.\?\!\n]\s*$/.test(previo)) {
+      t = t.replace(/^([\s\n]*)(.)/, function(match, espacios, caracter) {
+        return espacios + caracter.toUpperCase();
+      });
+    }
+    t = t.replace(/([\.\?\!\n]+\s*)(.)/g, function(match, separador, caracter) {
+      return separador + caracter.toUpperCase();
+    });
+    return t;
+  }
+
+  if(!SR){
+    st.textContent = 'Este navegador no admite dictado por voz. Prueba con Chrome, Edge o Safari.';
+    btn.disabled = true; return;
+  }
+
+  function crear(){
+    rec = new SR();
+    rec.lang = lang.value;
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.onresult = function(e){
+      var final = '', interim = '';
+      for(var i=e.resultIndex;i<e.results.length;i++){
+        var t = e.results[i][0].transcript;
+        if(e.results[i].isFinal) final += t; else interim += t;
+      }
+      var on = cmd.checked;
+      var f = final;
+      
+      if(on && /\bdeshacer\b/i.test(f.trim())){
+        pre = ultimoPre;
+        render('');
+        return;
+      }
+
+      if(on) f = procesar(final);
+      f = limpiar(f);
+      
+      if(f){ 
+        ultimoPre = pre; 
+        if(on) f = capitalizar(f, pre);
+        pre += sepa(pre, f) + f; 
+        if(post && !/^[\s.,]/.test(post) && !/\s$/.test(f)) pre += ' '; 
+      }
+      
+      var it = interim;
+      if(on && !/\bdeshacer\b/i.test(it.trim())) {
+        it = procesar(interim);
+        it = limpiar(it);
+        if(on && it) it = capitalizar(it, pre);
+      } else if (/\bdeshacer\b/i.test(it.trim())) {
+        it = '';
+      }
+      
+      render(it);
+    };
+    rec.onerror = function(e){
+      if(e.error === 'not-allowed' || e.error === 'service-not-allowed'){
+        st.textContent = 'No hay permiso para usar el micrófono. Actívalo en el navegador e inténtalo de nuevo.';
+        parar();
+      } else if(e.error !== 'no-speech' && e.error !== 'aborted'){
+        st.textContent = 'Error de dictado: ' + e.error;
+      }
+    };
+    rec.onend = function(){ if(activo){ try{ rec.start(); }catch(_){} } };
+  }
+
+  function iniciar(){
+    interimStr = '';
+    sync();
+    ultimoPre = pre;
+    crear();
+    try{ rec.start(); }catch(_){}
+    activo = true; btn.textContent = 'Detener'; btn.classList.add('on');
+    st.textContent = 'Escuchando…';
+  }
+  function parar(){
+    activo = false;
+    if(rec){ try{ rec.stop(); }catch(_){} }
+    btn.textContent = 'Dictar'; btn.classList.remove('on');
+    if(st.textContent === 'Escuchando…') st.textContent = '';
+  }
+
+  // Atajo Ctrl + Shift + D para activar/detener el dictado
+  document.addEventListener('keydown', function(e){
+    if(e.ctrlKey && e.shiftKey && !e.altKey && (e.key === 'd' || e.key === 'D')){
+      e.preventDefault();
+      btn.click();
+    }
+  });
+
+  btn.addEventListener('click', function(){ activo ? parar() : iniciar(); });
+  box.addEventListener('input', function(){ interimStr = ''; pre = box.value.slice(0, box.selectionStart); post = box.value.slice(box.selectionEnd); ultimoPre = pre; if(tmr) clearTimeout(tmr); tmr = setTimeout(detectar, 1200); });
+  ['click', 'keyup', 'mouseup'].forEach(function(ev){ box.addEventListener(ev, sync); });
+  lang.addEventListener('change', function(){ if(activo){ parar(); iniciar(); } });
+  document.getElementById('borrar').addEventListener('click', function(){ ultimoPre = box.value; ref = ''; box.value=''; pre=''; post=''; interimStr=''; });
+  
+  document.getElementById('copiar').addEventListener('click', function(){
+    var textoPlano = box.value;
+    var textoHTML = textoPlano.replace(/\n/g, '<br>');
+    
+    if(navigator.clipboard && window.ClipboardItem && window.isSecureContext){
+      var htmlBlob = new Blob([textoHTML], {type: 'text/html'});
+      var textBlob = new Blob([textoPlano], {type: 'text/plain'});
+      var clipItem = new ClipboardItem({
+        'text/html': htmlBlob,
+        'text/plain': textBlob
+      });
+      navigator.clipboard.write([clipItem]).then(function(){
+        st.textContent = 'Copiado con formato compacto (salto simple).';
+      }).catch(function(){
+        fallbackCopy(textoPlano);
+      });
+    } else {
+      fallbackCopy(textoPlano);
+    }
+    
+    function fallbackCopy(text) {
+      var tLimpio = text.replace(/\r\n/g, '\n');
+      var tempBox = document.createElement('textarea');
+      tempBox.value = tLimpio;
+      tempBox.style.position = 'fixed';
+      tempBox.style.opacity = '0';
+      document.body.appendChild(tempBox);
+      tempBox.select();
+      var ok = false;
+      try{ ok = document.execCommand('copy'); }catch(_){}
+      document.body.removeChild(tempBox);
+      st.textContent = ok ? 'Copiado en modo texto plano.' : 'Error al copiar.';
+    }
+  });
+})();
+</script>
+</body>
+</html>
